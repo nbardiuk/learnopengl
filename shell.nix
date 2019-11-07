@@ -30,7 +30,7 @@ in
 
     RUST_SRC_PATH="${rust}/lib/rustlib/src/rust/src";
 
-    # GLFW_LIB_DIR="${glfw}/lib";
+    GLFW_LIB_DIR="${glfw}/lib";
 
     LD_LIBRARY_PATH="${lib.makeLibraryPath [ libGL]}";
   }
