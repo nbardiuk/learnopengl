@@ -1,10 +1,21 @@
+use gl::types::{GLchar, GLint};
 use glfw::Action;
 use glfw::Context;
 use glfw::Key;
 use glfw::Window;
 use glfw::WindowEvent;
 use glfw::WindowHint;
+use std::ffi::CString;
+use std::ptr;
 use std::sync::mpsc::Receiver;
+
+const VERTEX_SHADER_SRC: &str = r#"
+    #version 330 core
+    layout (location = 0) in vec3 aPos;
+    void main() {
+        gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);
+    }
+"#;
 
 fn main() {
     // Initialize glfw for OpenGL 3.3
@@ -24,6 +35,22 @@ fn main() {
 
     // gl: load all OpenGL function pointers
     gl::load_with(|symbol| window.get_proc_address(symbol) as *const _);
+
+    unsafe {
+        let vertex_shader = gl::CreateShader(gl::VERTEX_SHADER);
+        let as_c_str = CString::new(VERTEX_SHADER_SRC.as_bytes()).unwrap();
+        gl::ShaderSource(vertex_shader, 1, &as_c_str.as_ptr(), ptr::null());
+        gl::CompileShader(vertex_shader);
+        let mut size: GLint = 512;
+        let mut info_log: Vec<GLchar> = Vec::with_capacity(512 as usize);
+        info_log.resize(size as usize - 1, 0); // subtract 1 to skip the trailing null character
+        gl::GetShaderInfoLog(vertex_shader, size, &mut size, info_log.as_mut_ptr());
+        info_log.resize(size as usize, 0);
+        println!(
+            "Vertext Shader\n{}",
+            String::from_utf8_unchecked(info_log.into_iter().map(|i| i as u8).collect())
+        );
+    }
 
     // render loop
     while !window.should_close() {
