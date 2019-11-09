@@ -19,6 +19,10 @@ in
     buildInputs = [
       rust
 
+      # shaders validator
+      glslang 
+
+      # required for to build cargo glfw
       cmake
       xorg.libX11
       xorg.libXrandr

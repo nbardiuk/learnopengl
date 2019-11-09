@@ -1,4 +1,9 @@
-use gl::types::{GLchar, GLenum, GLfloat, GLint, GLsizeiptr, GLuint};
+use gl::types::GLchar;
+use gl::types::GLenum;
+use gl::types::GLfloat;
+use gl::types::GLint;
+use gl::types::GLsizeiptr;
+use gl::types::GLuint;
 use glfw::Action;
 use glfw::Context;
 use glfw::Key;
@@ -11,21 +16,8 @@ use std::os::raw::c_void;
 use std::ptr;
 use std::sync::mpsc::Receiver;
 
-const VERTEX_SHADER_SRC: &str = r#"
-    #version 330 core
-    layout (location = 0) in vec3 aPos;
-    void main() {
-        gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);
-    }
-"#;
-
-const FRAGMENT_SHADER_SRC: &str = r#"
-    #version 330 core
-    out vec4 FragColor;
-    void main() {
-        FragColor = vec4(1.0, 0.5, 0.2, 1.0);
-    }
-"#;
+const VERTEX_SHADER_SRC: &str = include_str!("../res/simple.vert");
+const FRAGMENT_SHADER_SRC: &str = include_str!("../res/orange.frag");
 
 fn main() {
     // Initialize glfw for OpenGL 3.3
