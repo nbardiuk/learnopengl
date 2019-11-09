@@ -45,18 +45,28 @@ fn main() {
     let shader_program = setup_shader_program(&[vertex_shader, fragment_shader])
         .expect("Shader Program likage failed");
 
-    let vertices: [GLfloat; 9] = [
-        -0.5, -0.5, 0., // left
-        0.5, -0.5, 0., // right
-        0., 0.5, 0., // top
+    let vertices: [GLfloat; 12] = [
+        0.5, 0.5, 0.0, // top right
+        0.5, -0.5, 0.0, // bottom right
+        -0.5, -0.5, 0.0, // bottom left
+        -0.5, 0.5, 0.0, // top left
+    ];
+
+    let indices: [GLuint; 6] = [
+        // start from 0
+        0, 1, 3, // first triangle
+        1, 2, 3, // second triangle
     ];
 
     let mut vao = 0;
     let mut vbo = 0;
+    let mut ebo = 0;
     unsafe {
+        // 1. bind Vertex Array Object
         gl::GenVertexArrays(1, &mut vao);
         gl::BindVertexArray(vao);
 
+        // 2. copy vertices array in a vertex buffer
         gl::GenBuffers(1, &mut vbo);
         gl::BindBuffer(gl::ARRAY_BUFFER, vbo);
         gl::BufferData(
@@ -66,6 +76,17 @@ fn main() {
             gl::STATIC_DRAW,
         );
 
+        // 3. copy indices array in a element buffer
+        gl::GenBuffers(1, &mut ebo);
+        gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, ebo);
+        gl::BufferData(
+            gl::ELEMENT_ARRAY_BUFFER,
+            mem::size_of_val(&indices) as GLsizeiptr,
+            &indices[0] as *const GLuint as *const c_void,
+            gl::STATIC_DRAW,
+        );
+
+        // 4. set vertex attribute pointers
         gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE, 0, ptr::null());
         gl::EnableVertexAttribArray(0);
     }
@@ -77,12 +98,14 @@ fn main() {
 
         //rendering
         unsafe {
+            // gl::PolygonMode(gl::FRONT_AND_BACK, gl::LINE); // wireframe mode
+
             gl::ClearColor(0.2, 0.2, 0.3, 1.);
             gl::Clear(gl::COLOR_BUFFER_BIT);
 
             gl::UseProgram(shader_program);
             gl::BindVertexArray(vao);
-            gl::DrawArrays(gl::TRIANGLES, 0, 3);
+            gl::DrawElements(gl::TRIANGLES, 6, gl::UNSIGNED_INT, ptr::null());
         }
 
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
@@ -94,6 +117,7 @@ fn main() {
     unsafe {
         gl::DeleteVertexArrays(1, &vao);
         gl::DeleteBuffers(1, &vbo);
+        gl::DeleteBuffers(1, &ebo);
     }
 }
 
