@@ -16,7 +16,7 @@ use std::os::raw::c_void;
 use std::ptr;
 use std::sync::mpsc::Receiver;
 
-const VERTEX_SHADER_SRC: &str = include_str!("../res/simple.vert");
+const VERTEX_SHADER_SRC: &str = include_str!("../res/setup.vert");
 const FRAGMENT_SHADER_SRC: &str = include_str!("../res/color.frag");
 
 fn main() {
@@ -45,22 +45,15 @@ fn main() {
     let shader_program = setup_shader_program(&[vertex_shader, fragment_shader])
         .expect("Shader Program likage failed");
 
-    let vertices: [GLfloat; 12] = [
-        0.5, 0.5, 0.0, // top right
-        0.5, -0.5, 0.0, // bottom right
-        -0.5, -0.5, 0.0, // bottom left
-        -0.5, 0.5, 0.0, // top left
-    ];
-
-    let indices: [GLuint; 6] = [
-        // start from 0
-        0, 1, 3, // first triangle
-        1, 2, 3, // second triangle
+    let vertices: [GLfloat; 18] = [
+        // positions    // colors
+        0.5, -0.5, 0.0, 1.0, 0.0, 0.0, // bottom right
+        -0.5, -0.5, 0.0, 0.0, 1.0, 0.0, // bottom left
+        0.0, 0.5, 0.0, 0.0, 0.0, 1.0, // top
     ];
 
     let mut vao = 0;
     let mut vbo = 0;
-    let mut ebo = 0;
     unsafe {
         // 1. bind Vertex Array Object
         gl::GenVertexArrays(1, &mut vao);
@@ -76,19 +69,26 @@ fn main() {
             gl::STATIC_DRAW,
         );
 
-        // 3. copy indices array in a element buffer
-        gl::GenBuffers(1, &mut ebo);
-        gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, ebo);
-        gl::BufferData(
-            gl::ELEMENT_ARRAY_BUFFER,
-            mem::size_of_val(&indices) as GLsizeiptr,
-            &indices[0] as *const GLuint as *const c_void,
-            gl::STATIC_DRAW,
+        // 3. set vertex attribute pointers
+        gl::VertexAttribPointer(
+            0,
+            3,
+            gl::FLOAT,
+            gl::FALSE,
+            6 * mem::size_of::<GLfloat>() as GLint,
+            ptr::null(),
         );
-
-        // 4. set vertex attribute pointers
-        gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE, 0, ptr::null());
         gl::EnableVertexAttribArray(0);
+
+        gl::VertexAttribPointer(
+            1,
+            3,
+            gl::FLOAT,
+            gl::FALSE,
+            6 * mem::size_of::<GLfloat>() as GLint,
+            (3 * mem::size_of::<GLfloat>() as GLint) as *const c_void,
+        );
+        gl::EnableVertexAttribArray(1);
     }
 
     // render loop
@@ -115,7 +115,7 @@ fn main() {
 
             // render the triangle
             gl::BindVertexArray(vao);
-            gl::DrawElements(gl::TRIANGLES, 6, gl::UNSIGNED_INT, ptr::null());
+            gl::DrawArrays(gl::TRIANGLES, 0, 3);
         }
 
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
@@ -127,7 +127,6 @@ fn main() {
     unsafe {
         gl::DeleteVertexArrays(1, &vao);
         gl::DeleteBuffers(1, &vbo);
-        gl::DeleteBuffers(1, &ebo);
     }
 }
 
