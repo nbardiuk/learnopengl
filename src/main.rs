@@ -1,4 +1,4 @@
-use gl::types::{GLchar, GLint};
+use gl::types::{GLchar, GLenum, GLint, GLuint};
 use glfw::Action;
 use glfw::Context;
 use glfw::Key;
@@ -16,6 +16,43 @@ const VERTEX_SHADER_SRC: &str = r#"
         gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);
     }
 "#;
+
+const FRAGMENT_SHADER_SRC: &str = r#"
+    #version 330 core
+    out vec4 FragColor;
+    void main() {
+        FragColor = vec4(1.0, 0.5, 0.2, 1.0);
+    }
+"#;
+
+fn setup_shader(src: &str, shader_type: GLenum) -> Result<GLuint, String> {
+    unsafe {
+        // init
+        let shader = gl::CreateShader(shader_type);
+
+        // load source
+        let as_c_str = CString::new(src.as_bytes()).unwrap();
+        gl::ShaderSource(shader, 1, &as_c_str.as_ptr(), ptr::null());
+
+        // compile
+        gl::CompileShader(shader);
+
+        // collect logs
+        let mut size: GLint = 512;
+        let mut info_log: Vec<GLchar> = Vec::with_capacity(size as usize);
+        info_log.resize(size as usize - 1, 0); // subtract 1 to skip the trailing null character
+        gl::GetShaderInfoLog(shader, size, &mut size, info_log.as_mut_ptr());
+        info_log.resize(size as usize, 0);
+
+        if info_log.is_empty() {
+            Ok(shader)
+        } else {
+            Err(String::from_utf8_unchecked(
+                info_log.into_iter().map(|i| i as u8).collect(),
+            ))
+        }
+    }
+}
 
 fn main() {
     // Initialize glfw for OpenGL 3.3
@@ -36,20 +73,11 @@ fn main() {
     // gl: load all OpenGL function pointers
     gl::load_with(|symbol| window.get_proc_address(symbol) as *const _);
 
-    unsafe {
-        let vertex_shader = gl::CreateShader(gl::VERTEX_SHADER);
-        let as_c_str = CString::new(VERTEX_SHADER_SRC.as_bytes()).unwrap();
-        gl::ShaderSource(vertex_shader, 1, &as_c_str.as_ptr(), ptr::null());
-        gl::CompileShader(vertex_shader);
-        let mut size: GLint = 512;
-        let mut info_log: Vec<GLchar> = Vec::with_capacity(512 as usize);
-        info_log.resize(size as usize - 1, 0); // subtract 1 to skip the trailing null character
-        gl::GetShaderInfoLog(vertex_shader, size, &mut size, info_log.as_mut_ptr());
-        info_log.resize(size as usize, 0);
-        println!(
-            "Vertext Shader\n{}",
-            String::from_utf8_unchecked(info_log.into_iter().map(|i| i as u8).collect())
-        );
+    if let Err(msg) = setup_shader(VERTEX_SHADER_SRC, gl::VERTEX_SHADER) {
+        println!("Vertex Shader compilation failed\n{}", msg);
+    }
+    if let Err(msg) = setup_shader(FRAGMENT_SHADER_SRC, gl::FRAGMENT_SHADER) {
+        println!("Fragment Shader compilation failed\n{}", msg);
     }
 
     // render loop
