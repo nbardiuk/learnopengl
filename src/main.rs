@@ -1,9 +1,9 @@
-use gl::types::GLchar;
-use gl::types::GLenum;
+mod shader;
+
+use crate::shader::Shader;
 use gl::types::GLfloat;
 use gl::types::GLint;
 use gl::types::GLsizeiptr;
-use gl::types::GLuint;
 use glfw::Action;
 use glfw::Context;
 use glfw::Key;
@@ -15,9 +15,6 @@ use std::mem;
 use std::os::raw::c_void;
 use std::ptr;
 use std::sync::mpsc::Receiver;
-
-const VERTEX_SHADER_SRC: &str = include_str!("../res/setup.vert");
-const FRAGMENT_SHADER_SRC: &str = include_str!("../res/color.frag");
 
 fn main() {
     // Initialize glfw for OpenGL 3.3
@@ -38,12 +35,8 @@ fn main() {
     // gl: load all OpenGL function pointers
     gl::load_with(|symbol| window.get_proc_address(symbol) as *const _);
 
-    let vertex_shader = setup_shader(VERTEX_SHADER_SRC, gl::VERTEX_SHADER)
-        .expect("Vertex Shader compilation failed");
-    let fragment_shader = setup_shader(FRAGMENT_SHADER_SRC, gl::FRAGMENT_SHADER)
-        .expect("Fragment Shader compilation failed");
-    let shader_program = setup_shader_program(&[vertex_shader, fragment_shader])
-        .expect("Shader Program likage failed");
+    let shader_program =
+        Shader::new("res/setup.vert", "res/color.frag").expect("Shader Program linkage failed");
 
     let vertices: [GLfloat; 18] = [
         // positions    // colors
@@ -105,11 +98,12 @@ fn main() {
             gl::Clear(gl::COLOR_BUFFER_BIT);
 
             // activate the shader
-            gl::UseProgram(shader_program);
+            gl::UseProgram(shader_program.id);
 
             // unpdate uniform color
             let our_color = CString::new("ourColor").unwrap();
-            let vertex_color_location = gl::GetUniformLocation(shader_program, our_color.as_ptr());
+            let vertex_color_location =
+                gl::GetUniformLocation(shader_program.id, our_color.as_ptr());
             let green_value = glfw.get_time().sin() as f32 / 2. + 0.5;
             gl::Uniform4f(vertex_color_location, 0., green_value, 0., 1.);
 
@@ -139,70 +133,6 @@ fn process_events(window: &mut Window, events: &Receiver<(f64, WindowEvent)>) {
             }
             WindowEvent::Key(Key::Escape, _, Action::Press, _) => window.set_should_close(true),
             _ => {}
-        }
-    }
-}
-
-fn setup_shader(src: &str, shader_type: GLenum) -> Result<GLuint, String> {
-    unsafe {
-        // init
-        let shader = gl::CreateShader(shader_type);
-
-        // load source
-        let as_c_str = CString::new(src.as_bytes()).unwrap();
-        gl::ShaderSource(shader, 1, &as_c_str.as_ptr(), ptr::null());
-
-        // compile
-        gl::CompileShader(shader);
-
-        // collect logs
-        let mut size: GLint = 512;
-        let mut info_log: Vec<GLchar> = Vec::with_capacity(size as usize);
-        info_log.resize(size as usize - 1, 0); // subtract 1 to skip the trailing null character
-        gl::GetShaderInfoLog(shader, size, &mut size, info_log.as_mut_ptr());
-        info_log.resize(size as usize, 0);
-
-        if info_log.is_empty() {
-            Ok(shader)
-        } else {
-            Err(String::from_utf8_unchecked(
-                info_log.into_iter().map(|i| i as u8).collect(),
-            ))
-        }
-    }
-}
-
-fn setup_shader_program(shaders: &[GLuint]) -> Result<GLuint, String> {
-    unsafe {
-        // init
-        let shader_program = gl::CreateProgram();
-
-        // add shaders
-        for shader in shaders {
-            gl::AttachShader(shader_program, *shader);
-        }
-
-        // link program
-        gl::LinkProgram(shader_program);
-
-        // cleanup shaders
-        for shader in shaders {
-            gl::DeleteShader(*shader);
-        }
-
-        // collect logs
-        let mut size: GLint = 512;
-        let mut info_log: Vec<GLchar> = Vec::with_capacity(size as usize);
-        info_log.resize(size as usize - 1, 0); // subtract 1 to skip the trailing null character
-        gl::GetProgramInfoLog(shader_program, size, &mut size, info_log.as_mut_ptr());
-        info_log.resize(size as usize, 0);
-
-        if info_log.is_empty() {
-            Ok(shader_program)
-        } else {
-            Err(String::from_utf8_unchecked(
-                info_log.into_iter().map(|i| i as u8).collect(),
-            ))
         }
     }
 }
