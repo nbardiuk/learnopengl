@@ -1,4 +1,4 @@
-use gl::types::{GLchar, GLenum, GLint, GLuint};
+use gl::types::{GLchar, GLenum, GLfloat, GLint, GLsizeiptr, GLuint};
 use glfw::Action;
 use glfw::Context;
 use glfw::Key;
@@ -6,6 +6,8 @@ use glfw::Window;
 use glfw::WindowEvent;
 use glfw::WindowHint;
 use std::ffi::CString;
+use std::mem;
+use std::os::raw::c_void;
 use std::ptr;
 use std::sync::mpsc::Receiver;
 
@@ -51,8 +53,29 @@ fn main() {
     let shader_program = setup_shader_program(&[vertex_shader, fragment_shader])
         .expect("Shader Program likage failed");
 
+    let vertices: [GLfloat; 9] = [
+        -0.5, -0.5, 0., // left
+        0.5, -0.5, 0., // right
+        0., 0.5, 0., // top
+    ];
+
+    let mut vao = 0;
+    let mut vbo = 0;
     unsafe {
-        gl::UseProgram(shader_program);
+        gl::GenVertexArrays(1, &mut vao);
+        gl::BindVertexArray(vao);
+
+        gl::GenBuffers(1, &mut vbo);
+        gl::BindBuffer(gl::ARRAY_BUFFER, vbo);
+        gl::BufferData(
+            gl::ARRAY_BUFFER,
+            mem::size_of_val(&vertices) as GLsizeiptr,
+            &vertices[0] as *const GLfloat as *const c_void,
+            gl::STATIC_DRAW,
+        );
+
+        gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE, 0, ptr::null());
+        gl::EnableVertexAttribArray(0);
     }
 
     // render loop
@@ -64,11 +87,21 @@ fn main() {
         unsafe {
             gl::ClearColor(0.2, 0.2, 0.3, 1.);
             gl::Clear(gl::COLOR_BUFFER_BIT);
+
+            gl::UseProgram(shader_program);
+            gl::BindVertexArray(vao);
+            gl::DrawArrays(gl::TRIANGLES, 0, 3);
         }
 
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         window.swap_buffers();
         glfw.poll_events();
+    }
+
+    // dealocate resources
+    unsafe {
+        gl::DeleteVertexArrays(1, &vao);
+        gl::DeleteBuffers(1, &vbo);
     }
 }
 
