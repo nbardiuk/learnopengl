@@ -17,7 +17,7 @@ use std::ptr;
 use std::sync::mpsc::Receiver;
 
 const VERTEX_SHADER_SRC: &str = include_str!("../res/simple.vert");
-const FRAGMENT_SHADER_SRC: &str = include_str!("../res/orange.frag");
+const FRAGMENT_SHADER_SRC: &str = include_str!("../res/color.frag");
 
 fn main() {
     // Initialize glfw for OpenGL 3.3
@@ -100,10 +100,20 @@ fn main() {
         unsafe {
             // gl::PolygonMode(gl::FRONT_AND_BACK, gl::LINE); // wireframe mode
 
+            // clear the colorbuffer
             gl::ClearColor(0.2, 0.2, 0.3, 1.);
             gl::Clear(gl::COLOR_BUFFER_BIT);
 
+            // activate the shader
             gl::UseProgram(shader_program);
+
+            // unpdate uniform color
+            let our_color = CString::new("ourColor").unwrap();
+            let vertex_color_location = gl::GetUniformLocation(shader_program, our_color.as_ptr());
+            let green_value = glfw.get_time().sin() as f32 / 2. + 0.5;
+            gl::Uniform4f(vertex_color_location, 0., green_value, 0., 1.);
+
+            // render the triangle
             gl::BindVertexArray(vao);
             gl::DrawElements(gl::TRIANGLES, 6, gl::UNSIGNED_INT, ptr::null());
         }
