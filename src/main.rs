@@ -1,6 +1,9 @@
 mod shader;
 
 use crate::shader::Shader;
+use cgmath::prelude::*;
+use cgmath::Deg;
+use cgmath::Matrix4;
 use gl::types::GLfloat;
 use gl::types::GLint;
 use gl::types::GLsizeiptr;
@@ -41,12 +44,12 @@ fn main() {
     let shader = Shader::new("res/shaders/shader.vert", "res/shaders/shader.frag")
         .expect("Shader Program linkage failed");
 
-    let vertices: [GLfloat; 32] = [
-        // positions   // colors      // texture coords
-        0.5, 0.5, 0.0, 1.0, 0.0, 0.0, 1.0, 1.0, // top right
-        0.5, -0.5, 0.0, 0.0, 1.0, 0.0, 1.0, 0.0, // bottom right
-        -0.5, -0.5, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, // bottom left
-        -0.5, 0.5, 0.0, 1.0, 1.0, 0.0, 0.0, 1.0, // top left
+    let vertices: [GLfloat; 20] = [
+        // positions   // texture coords
+        0.5, 0.5, 0.0, 1.0, 1.0, // top right
+        0.5, -0.5, 0.0, 1.0, 0.0, // bottom right
+        -0.5, -0.5, 0.0, 0.0, 0.0, // bottom left
+        -0.5, 0.5, 0.0, 0.0, 1.0, // top left
     ];
     let indices: [GLuint; 6] = [
         // start from 0
@@ -97,33 +100,27 @@ fn main() {
             3,
             gl::FLOAT,
             gl::FALSE,
-            8 * mem::size_of::<GLfloat>() as GLint,
+            5 * mem::size_of::<GLfloat>() as GLint,
             ptr::null(),
         );
         gl::EnableVertexAttribArray(0);
 
-        // colors
+        // texture coords
         gl::VertexAttribPointer(
             1,
-            3,
+            2,
             gl::FLOAT,
             gl::FALSE,
-            8 * mem::size_of::<GLfloat>() as GLint,
+            5 * mem::size_of::<GLfloat>() as GLint,
             (3 * mem::size_of::<GLfloat>() as GLint) as *const c_void,
         );
         gl::EnableVertexAttribArray(1);
-
-        // texture coords
-        gl::VertexAttribPointer(
-            2,
-            2,
-            gl::FLOAT,
-            gl::FALSE,
-            8 * mem::size_of::<GLfloat>() as GLint,
-            (6 * mem::size_of::<GLfloat>() as GLint) as *const c_void,
-        );
-        gl::EnableVertexAttribArray(2);
     }
+
+    let trans = Matrix4::identity();
+    let trans = trans * Matrix4::from_angle_z(Deg(90.));
+    let trans = trans * Matrix4::from_nonuniform_scale(0.5, 0.5, 0.5);
+    shader.set_matrix_4f("transform", trans);
 
     // render loop
     while !window.should_close() {
