@@ -2,8 +2,9 @@ mod shader;
 
 use crate::shader::Shader;
 use cgmath::prelude::*;
-use cgmath::Deg;
+use cgmath::vec3;
 use cgmath::Matrix4;
+use cgmath::Rad;
 use gl::types::GLfloat;
 use gl::types::GLint;
 use gl::types::GLsizeiptr;
@@ -117,11 +118,6 @@ fn main() {
         gl::EnableVertexAttribArray(1);
     }
 
-    let trans = Matrix4::identity();
-    let trans = trans * Matrix4::from_angle_z(Deg(90.));
-    let trans = trans * Matrix4::from_nonuniform_scale(0.5, 0.5, 0.5);
-    shader.set_matrix_4f("transform", trans);
-
     // render loop
     while !window.should_close() {
         // events
@@ -137,6 +133,11 @@ fn main() {
 
             // activate the shader
             shader.use_program();
+
+            // recompute transformation
+            let trans = Matrix4::from_translation(vec3(0.5, -0.5, 0.));
+            let trans = trans * Matrix4::from_angle_z(Rad(glfw.get_time().sin() as f32));
+            shader.set_matrix_4f("transform", trans);
 
             // render the shape
             gl::ActiveTexture(gl::TEXTURE0);
