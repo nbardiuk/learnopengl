@@ -4,14 +4,17 @@ use crate::shader::Shader;
 use gl::types::GLfloat;
 use gl::types::GLint;
 use gl::types::GLsizeiptr;
+use gl::types::GLuint;
 use glfw::Action;
 use glfw::Context;
 use glfw::Key;
 use glfw::Window;
 use glfw::WindowEvent;
 use glfw::WindowHint;
+use image::GenericImageView;
 use std::mem;
 use std::os::raw::c_void;
+use std::path::Path;
 use std::ptr;
 use std::sync::mpsc::Receiver;
 
@@ -34,18 +37,53 @@ fn main() {
     // gl: load all OpenGL function pointers
     gl::load_with(|symbol| window.get_proc_address(symbol) as *const _);
 
-    let shader =
-        Shader::new("res/setup.vert", "res/color.frag").expect("Shader Program linkage failed");
+    let shader = Shader::new("res/shaders/setup.vert", "res/shaders/color.frag")
+        .expect("Shader Program linkage failed");
 
-    let vertices: [GLfloat; 18] = [
-        // positions    // colors
-        0.5, -0.5, 0.0, 1.0, 0.0, 0.0, // bottom right
-        -0.5, -0.5, 0.0, 0.0, 1.0, 0.0, // bottom left
-        0.0, 0.5, 0.0, 0.0, 0.0, 1.0, // top
+    let vertices: [GLfloat; 32] = [
+        // positions   // colors      // texture coords
+        0.5, 0.5, 0.0, 1.0, 0.0, 0.0, 1.0, 1.0, // top right
+        0.5, -0.5, 0.0, 0.0, 1.0, 0.0, 1.0, 0.0, // bottom right
+        -0.5, -0.5, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, // bottom left
+        -0.5, 0.5, 0.0, 1.0, 1.0, 0.0, 0.0, 1.0, // top left
     ];
+    let indices: [GLuint; 6] = [
+        // start from 0
+        0, 1, 3, // first triangle
+        1, 2, 3, // second triangle
+    ];
+
+    let texture = unsafe {
+        // read image data
+        let img = image::open(&Path::new("res/textures/container.jpg"))
+            .expect("Could not load contianer texture");
+
+        // initialize texture
+        let mut texture = 0;
+        gl::GenTextures(1, &mut texture);
+
+        // transfer image data
+        gl::BindTexture(gl::TEXTURE_2D, texture);
+        gl::TexImage2D(
+            gl::TEXTURE_2D,
+            0,
+            gl::RGB as GLint,
+            img.width() as GLint,
+            img.height() as GLint,
+            0,
+            gl::RGB,
+            gl::UNSIGNED_BYTE,
+            &img.raw_pixels()[0] as *const u8 as *const c_void,
+        );
+
+        // generate all mip map images for us
+        gl::GenerateMipmap(gl::TEXTURE_2D);
+        texture
+    };
 
     let mut vao = 0;
     let mut vbo = 0;
+    let mut ebo = 0;
     unsafe {
         // 1. bind Vertex Array Object
         gl::GenVertexArrays(1, &mut vao);
@@ -61,26 +99,49 @@ fn main() {
             gl::STATIC_DRAW,
         );
 
-        // 3. set vertex attribute pointers
+        // 3. copy indices array in a element buffer
+        gl::GenBuffers(1, &mut ebo);
+        gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, ebo);
+        gl::BufferData(
+            gl::ELEMENT_ARRAY_BUFFER,
+            mem::size_of_val(&indices) as GLsizeiptr,
+            &indices[0] as *const GLuint as *const c_void,
+            gl::STATIC_DRAW,
+        );
+
+        // 4. set vertex attribute pointers
+        // positions
         gl::VertexAttribPointer(
             0,
             3,
             gl::FLOAT,
             gl::FALSE,
-            6 * mem::size_of::<GLfloat>() as GLint,
+            8 * mem::size_of::<GLfloat>() as GLint,
             ptr::null(),
         );
         gl::EnableVertexAttribArray(0);
 
+        // colors
         gl::VertexAttribPointer(
             1,
             3,
             gl::FLOAT,
             gl::FALSE,
-            6 * mem::size_of::<GLfloat>() as GLint,
+            8 * mem::size_of::<GLfloat>() as GLint,
             (3 * mem::size_of::<GLfloat>() as GLint) as *const c_void,
         );
         gl::EnableVertexAttribArray(1);
+
+        // texture coords
+        gl::VertexAttribPointer(
+            2,
+            2,
+            gl::FLOAT,
+            gl::FALSE,
+            8 * mem::size_of::<GLfloat>() as GLint,
+            (6 * mem::size_of::<GLfloat>() as GLint) as *const c_void,
+        );
+        gl::EnableVertexAttribArray(2);
     }
 
     // render loop
@@ -99,11 +160,10 @@ fn main() {
             // activate the shader
             shader.use_program();
 
-            shader.set_float("offset", glfw.get_time().sin() as f32);
-
-            // render the triangle
+            // render the shape
+            gl::BindTexture(gl::TEXTURE_2D, texture);
             gl::BindVertexArray(vao);
-            gl::DrawArrays(gl::TRIANGLES, 0, 3);
+            gl::DrawElements(gl::TRIANGLES, 6, gl::UNSIGNED_INT, ptr::null());
         }
 
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
@@ -115,6 +175,7 @@ fn main() {
     unsafe {
         gl::DeleteVertexArrays(1, &vao);
         gl::DeleteBuffers(1, &vbo);
+        gl::DeleteTextures(1, &texture);
     }
 }
 
