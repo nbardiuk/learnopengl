@@ -1,5 +1,6 @@
 use gl::types::GLchar;
 use gl::types::GLenum;
+use gl::types::GLfloat;
 use gl::types::GLint;
 use gl::types::GLuint;
 use std::ffi::CString;
@@ -7,7 +8,7 @@ use std::fs;
 use std::ptr;
 
 pub struct Shader {
-    pub id: GLuint,
+    id: GLuint,
 }
 
 impl Shader {
@@ -23,6 +24,33 @@ impl Shader {
         let id = setup_shader_program(&[vertex_shader, fragment_shader])?;
 
         Ok(Shader { id })
+    }
+
+    pub fn use_program(&self) {
+        unsafe {
+            gl::UseProgram(self.id);
+        }
+    }
+
+    pub fn set_bool(&self, name: &str, value: bool) {
+        self.set_int(name, value as i32)
+    }
+
+    pub fn set_int(&self, name: &str, value: i32) {
+        unsafe {
+            gl::Uniform1i(self.get_uniform_location(name), value as GLint);
+        }
+    }
+
+    pub fn set_float(&self, name: &str, value: f32) {
+        unsafe {
+            gl::Uniform1f(self.get_uniform_location(name), value as GLfloat);
+        }
+    }
+
+    fn get_uniform_location(&self, name: &str) -> GLint {
+        let name_cstring = CString::new(name).unwrap();
+        unsafe { gl::GetUniformLocation(self.id, name_cstring.as_ptr()) }
     }
 }
 

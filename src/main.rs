@@ -10,7 +10,6 @@ use glfw::Key;
 use glfw::Window;
 use glfw::WindowEvent;
 use glfw::WindowHint;
-use std::ffi::CString;
 use std::mem;
 use std::os::raw::c_void;
 use std::ptr;
@@ -35,7 +34,7 @@ fn main() {
     // gl: load all OpenGL function pointers
     gl::load_with(|symbol| window.get_proc_address(symbol) as *const _);
 
-    let shader_program =
+    let shader =
         Shader::new("res/setup.vert", "res/color.frag").expect("Shader Program linkage failed");
 
     let vertices: [GLfloat; 18] = [
@@ -98,14 +97,7 @@ fn main() {
             gl::Clear(gl::COLOR_BUFFER_BIT);
 
             // activate the shader
-            gl::UseProgram(shader_program.id);
-
-            // unpdate uniform color
-            let our_color = CString::new("ourColor").unwrap();
-            let vertex_color_location =
-                gl::GetUniformLocation(shader_program.id, our_color.as_ptr());
-            let green_value = glfw.get_time().sin() as f32 / 2. + 0.5;
-            gl::Uniform4f(vertex_color_location, 0., green_value, 0., 1.);
+            shader.use_program();
 
             // render the triangle
             gl::BindVertexArray(vao);
