@@ -38,7 +38,7 @@ fn main() {
     // gl: load all OpenGL function pointers
     gl::load_with(|symbol| window.get_proc_address(symbol) as *const _);
 
-    let shader = Shader::new("res/shaders/setup.vert", "res/shaders/color.frag")
+    let shader = Shader::new("res/shaders/shader.vert", "res/shaders/shader.frag")
         .expect("Shader Program linkage failed");
 
     let vertices: [GLfloat; 32] = [
