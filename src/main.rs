@@ -11,6 +11,7 @@ use glfw::Key;
 use glfw::Window;
 use glfw::WindowEvent;
 use glfw::WindowHint;
+use image::ColorType;
 use image::GenericImageView;
 use std::mem;
 use std::os::raw::c_void;
@@ -53,33 +54,13 @@ fn main() {
         1, 2, 3, // second triangle
     ];
 
-    let texture = unsafe {
-        // read image data
-        let img = image::open(&Path::new("res/textures/container.jpg"))
-            .expect("Could not load contianer texture");
+    let texture1 = load_texture("res/textures/container.jpg").unwrap();
+    let texture2 = load_texture("res/textures/awesomeface.png").unwrap();
 
-        // initialize texture
-        let mut texture = 0;
-        gl::GenTextures(1, &mut texture);
-
-        // transfer image data
-        gl::BindTexture(gl::TEXTURE_2D, texture);
-        gl::TexImage2D(
-            gl::TEXTURE_2D,
-            0,
-            gl::RGB as GLint,
-            img.width() as GLint,
-            img.height() as GLint,
-            0,
-            gl::RGB,
-            gl::UNSIGNED_BYTE,
-            &img.raw_pixels()[0] as *const u8 as *const c_void,
-        );
-
-        // generate all mip map images for us
-        gl::GenerateMipmap(gl::TEXTURE_2D);
-        texture
-    };
+    // tell opengl for each sampler to which texture unit it belongs to
+    shader.use_program();
+    shader.set_int("texture1", 0);
+    shader.set_int("texture2", 1);
 
     let mut vao = 0;
     let mut vbo = 0;
@@ -161,7 +142,11 @@ fn main() {
             shader.use_program();
 
             // render the shape
-            gl::BindTexture(gl::TEXTURE_2D, texture);
+            gl::ActiveTexture(gl::TEXTURE0);
+            gl::BindTexture(gl::TEXTURE_2D, texture1);
+            gl::ActiveTexture(gl::TEXTURE1);
+            gl::BindTexture(gl::TEXTURE_2D, texture2);
+
             gl::BindVertexArray(vao);
             gl::DrawElements(gl::TRIANGLES, 6, gl::UNSIGNED_INT, ptr::null());
         }
@@ -175,7 +160,7 @@ fn main() {
     unsafe {
         gl::DeleteVertexArrays(1, &vao);
         gl::DeleteBuffers(1, &vbo);
-        gl::DeleteTextures(1, &texture);
+        gl::DeleteTextures(1, &texture1);
     }
 }
 
@@ -189,5 +174,52 @@ fn process_events(window: &mut Window, events: &Receiver<(f64, WindowEvent)>) {
             WindowEvent::Key(Key::Escape, _, Action::Press, _) => window.set_should_close(true),
             _ => {}
         }
+    }
+}
+
+fn load_texture(path: &str) -> Result<GLuint, String> {
+    // read image data
+    let img = image::open(&Path::new(path)).map_err(|e| format!("Could not load texture {}", e))?;
+
+    let format = match img.color() {
+        ColorType::RGB(_) => gl::RGB,
+        ColorType::RGBA(_) => gl::RGBA,
+        ColorType::Gray(_) => gl::DEPTH_COMPONENT,
+        ColorType::GrayA(_) => gl::DEPTH_STENCIL,
+        ColorType::BGR(_) => gl::BGR,
+        ColorType::BGRA(_) => gl::BGRA,
+        ColorType::Palette(_) => gl::DEPTH_COMPONENT,
+    };
+
+    unsafe {
+        // initialize texture
+        let mut texture = 0;
+        gl::GenTextures(1, &mut texture);
+
+        // set the texture wrapping parameters
+        // set texture wrapping to GL_REPEAT (default wrapping method)
+        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_S, gl::REPEAT as GLint);
+        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_T, gl::REPEAT as GLint);
+        // set texture filtering parameters
+        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR as GLint);
+        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::LINEAR as GLint);
+
+        // transfer image data
+        gl::BindTexture(gl::TEXTURE_2D, texture);
+        gl::TexImage2D(
+            gl::TEXTURE_2D,
+            0,
+            format as GLint,
+            img.width() as GLint,
+            img.height() as GLint,
+            0,
+            format,
+            gl::UNSIGNED_BYTE,
+            &img.raw_pixels()[0] as *const u8 as *const c_void,
+        );
+
+        // generate all mip map images for us
+        gl::GenerateMipmap(gl::TEXTURE_2D);
+        Ok(texture)
     }
 }
