@@ -99,6 +99,8 @@ fn main() {
             // activate the shader
             shader.use_program();
 
+            shader.set_float("offset", glfw.get_time().sin() as f32);
+
             // render the triangle
             gl::BindVertexArray(vao);
             gl::DrawArrays(gl::TRIANGLES, 0, 3);
