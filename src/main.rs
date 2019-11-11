@@ -2,6 +2,7 @@ mod shader;
 
 use crate::shader::Shader;
 use cgmath::perspective;
+use cgmath::prelude::*;
 use cgmath::vec3;
 use cgmath::Deg;
 use cgmath::Matrix4;
@@ -45,17 +46,49 @@ fn main() {
     let shader = Shader::new("res/shaders/shader.vert", "res/shaders/shader.frag")
         .expect("Shader Program linkage failed");
 
-    let vertices: [GLfloat; 20] = [
+    let vertices: [GLfloat; 180] = [
         // positions   // texture coords
-        0.5, 0.5, 0.0, 1.0, 1.0, // top right
-        0.5, -0.5, 0.0, 1.0, 0.0, // bottom right
-        -0.5, -0.5, 0.0, 0.0, 0.0, // bottom left
-        -0.5, 0.5, 0.0, 0.0, 1.0, // top left
-    ];
-    let indices: [GLuint; 6] = [
-        // start from 0
-        0, 1, 3, // first triangle
-        1, 2, 3, // second triangle
+        -0.5, -0.5, -0.5, 0.0, 0.0, //
+        0.5, -0.5, -0.5, 1.0, 0.0, //
+        0.5, 0.5, -0.5, 1.0, 1.0, //
+        0.5, 0.5, -0.5, 1.0, 1.0, //
+        -0.5, 0.5, -0.5, 0.0, 1.0, //
+        -0.5, -0.5, -0.5, 0.0, 0.0, //
+        // positions   // texture coords
+        -0.5, -0.5, 0.5, 0.0, 0.0, //
+        0.5, -0.5, 0.5, 1.0, 0.0, //
+        0.5, 0.5, 0.5, 1.0, 1.0, //
+        0.5, 0.5, 0.5, 1.0, 1.0, //
+        -0.5, 0.5, 0.5, 0.0, 1.0, //
+        -0.5, -0.5, 0.5, 0.0, 0.0, //
+        // positions   // texture coords
+        -0.5, 0.5, 0.5, 1.0, 0.0, //
+        -0.5, 0.5, -0.5, 1.0, 1.0, //
+        -0.5, -0.5, -0.5, 0.0, 1.0, //
+        -0.5, -0.5, -0.5, 0.0, 1.0, //
+        -0.5, -0.5, 0.5, 0.0, 0.0, //
+        -0.5, 0.5, 0.5, 1.0, 0.0, //
+        // positions   // texture coords
+        0.5, 0.5, 0.5, 1.0, 0.0, //
+        0.5, 0.5, -0.5, 1.0, 1.0, //
+        0.5, -0.5, -0.5, 0.0, 1.0, //
+        0.5, -0.5, -0.5, 0.0, 1.0, //
+        0.5, -0.5, 0.5, 0.0, 0.0, //
+        0.5, 0.5, 0.5, 1.0, 0.0, //
+        // positions   // texture coords
+        -0.5, -0.5, -0.5, 0.0, 1.0, //
+        0.5, -0.5, -0.5, 1.0, 1.0, //
+        0.5, -0.5, 0.5, 1.0, 0.0, //
+        0.5, -0.5, 0.5, 1.0, 0.0, //
+        -0.5, -0.5, 0.5, 0.0, 0.0, //
+        -0.5, -0.5, -0.5, 0.0, 1.0, //
+        // positions   // texture coords
+        -0.5, 0.5, -0.5, 0.0, 1.0, //
+        0.5, 0.5, -0.5, 1.0, 1.0, //
+        0.5, 0.5, 0.5, 1.0, 0.0, //
+        0.5, 0.5, 0.5, 1.0, 0.0, //
+        -0.5, 0.5, 0.5, 0.0, 0.0, //
+        -0.5, 0.5, -0.5, 0.0, 1.0, //
     ];
 
     let texture1 = load_texture("res/textures/container.jpg").unwrap();
@@ -68,7 +101,6 @@ fn main() {
 
     let mut vao = 0;
     let mut vbo = 0;
-    let mut ebo = 0;
     unsafe {
         // 1. bind Vertex Array Object
         gl::GenVertexArrays(1, &mut vao);
@@ -84,17 +116,7 @@ fn main() {
             gl::STATIC_DRAW,
         );
 
-        // 3. copy indices array in a element buffer
-        gl::GenBuffers(1, &mut ebo);
-        gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, ebo);
-        gl::BufferData(
-            gl::ELEMENT_ARRAY_BUFFER,
-            mem::size_of_val(&indices) as GLsizeiptr,
-            &indices[0] as *const GLuint as *const c_void,
-            gl::STATIC_DRAW,
-        );
-
-        // 4. set vertex attribute pointers
+        // 3. set vertex attribute pointers
         // positions
         gl::VertexAttribPointer(
             0,
@@ -118,6 +140,10 @@ fn main() {
         gl::EnableVertexAttribArray(1);
     }
 
+    unsafe {
+        gl::Enable(gl::DEPTH_TEST);
+    }
+
     // render loop
     while !window.should_close() {
         // events
@@ -129,12 +155,18 @@ fn main() {
 
             // clear the colorbuffer
             gl::ClearColor(0.2, 0.2, 0.3, 1.);
-            gl::Clear(gl::COLOR_BUFFER_BIT);
+            gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
 
             // activate the shader
             shader.use_program();
 
-            shader.set_matrix_4f("model", Matrix4::from_angle_x(Deg(-55.)));
+            shader.set_matrix_4f(
+                "model",
+                Matrix4::from_axis_angle(
+                    vec3(0.5, 1., 0.).normalize(),
+                    Deg(50.) * glfw.get_time() as f32,
+                ),
+            );
             shader.set_matrix_4f("view", Matrix4::from_translation(vec3(0., 0., -3.)));
             let (width, height) = window.get_size();
             shader.set_matrix_4f(
@@ -149,7 +181,7 @@ fn main() {
             gl::BindTexture(gl::TEXTURE_2D, texture2);
 
             gl::BindVertexArray(vao);
-            gl::DrawElements(gl::TRIANGLES, 6, gl::UNSIGNED_INT, ptr::null());
+            gl::DrawArrays(gl::TRIANGLES, 0, 36);
         }
 
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
@@ -162,6 +194,7 @@ fn main() {
         gl::DeleteVertexArrays(1, &vao);
         gl::DeleteBuffers(1, &vbo);
         gl::DeleteTextures(1, &texture1);
+        gl::DeleteTextures(1, &texture2);
     }
 }
 
