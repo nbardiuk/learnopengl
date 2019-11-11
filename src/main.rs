@@ -1,10 +1,10 @@
 mod shader;
 
 use crate::shader::Shader;
-use cgmath::prelude::*;
+use cgmath::perspective;
 use cgmath::vec3;
+use cgmath::Deg;
 use cgmath::Matrix4;
-use cgmath::Rad;
 use gl::types::GLfloat;
 use gl::types::GLint;
 use gl::types::GLsizeiptr;
@@ -134,10 +134,13 @@ fn main() {
             // activate the shader
             shader.use_program();
 
-            // recompute transformation
-            let trans = Matrix4::from_translation(vec3(0.5, -0.5, 0.));
-            let trans = trans * Matrix4::from_angle_z(Rad(glfw.get_time().sin() as f32));
-            shader.set_matrix_4f("transform", trans);
+            shader.set_matrix_4f("model", Matrix4::from_angle_x(Deg(-55.)));
+            shader.set_matrix_4f("view", Matrix4::from_translation(vec3(0., 0., -3.)));
+            let (width, height) = window.get_size();
+            shader.set_matrix_4f(
+                "projection",
+                perspective(Deg(45.), width as f32 / height as f32, 0.1, 100.),
+            );
 
             // render the shape
             gl::ActiveTexture(gl::TEXTURE0);
