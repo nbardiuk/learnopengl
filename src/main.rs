@@ -91,6 +91,19 @@ fn main() {
         -0.5, 0.5, -0.5, 0.0, 1.0, //
     ];
 
+    let cube_positions = [
+        vec3(0.0, 0.0, 0.0),
+        vec3(2.0, 5.0, -15.0),
+        vec3(-1.5, -2.2, -2.5),
+        vec3(-3.8, -2.0, -12.3),
+        vec3(2.4, -0.4, -3.5),
+        vec3(-1.7, 3.0, -7.5),
+        vec3(1.3, -2.0, -2.5),
+        vec3(1.5, 2.0, -2.5),
+        vec3(1.5, 0.2, -1.5),
+        vec3(-1.3, 1.0, -1.5),
+    ];
+
     let texture1 = load_texture("res/textures/container.jpg").unwrap();
     let texture2 = load_texture("res/textures/awesomeface.png").unwrap();
 
@@ -181,7 +194,17 @@ fn main() {
             gl::BindTexture(gl::TEXTURE_2D, texture2);
 
             gl::BindVertexArray(vao);
-            gl::DrawArrays(gl::TRIANGLES, 0, 36);
+            for (i, &position) in cube_positions.iter().enumerate() {
+                shader.set_matrix_4f(
+                    "model",
+                    Matrix4::from_translation(position)
+                        * Matrix4::from_axis_angle(
+                            vec3(1.0, 0.3, 0.5).normalize(),
+                            Deg((i as f32) * 20.),
+                        ),
+                );
+                gl::DrawArrays(gl::TRIANGLES, 0, 36);
+            }
         }
 
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
