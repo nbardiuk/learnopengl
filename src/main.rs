@@ -6,6 +6,7 @@ use cgmath::prelude::*;
 use cgmath::vec3;
 use cgmath::Deg;
 use cgmath::Matrix4;
+use cgmath::Point3;
 use gl::types::GLfloat;
 use gl::types::GLint;
 use gl::types::GLsizeiptr;
@@ -173,14 +174,15 @@ fn main() {
             // activate the shader
             shader.use_program();
 
-            shader.set_matrix_4f(
-                "model",
-                Matrix4::from_axis_angle(
-                    vec3(0.5, 1., 0.).normalize(),
-                    Deg(50.) * glfw.get_time() as f32,
-                ),
-            );
-            shader.set_matrix_4f("view", Matrix4::from_translation(vec3(0., 0., -3.)));
+            //camera
+            let radius = 10.;
+            let cam_x = glfw.get_time().sin() as f32 * radius;
+            let cam_y = glfw.get_time().cos() as f32 * radius;
+            let camera_pos = Point3::new(cam_x, 0., cam_y);
+            let camera_target = Point3::new(0., 0., 0.);
+            let up = vec3(0., 1., 0.);
+            shader.set_matrix_4f("view", Matrix4::look_at(camera_pos, camera_target, up));
+
             let (width, height) = window.get_size();
             shader.set_matrix_4f(
                 "projection",
