@@ -7,6 +7,7 @@ use cgmath::vec3;
 use cgmath::Deg;
 use cgmath::Matrix4;
 use cgmath::Point3;
+use cgmath::Vector3;
 use gl::types::GLfloat;
 use gl::types::GLint;
 use gl::types::GLsizeiptr;
@@ -158,10 +159,15 @@ fn main() {
         gl::Enable(gl::DEPTH_TEST);
     }
 
+    let mut camera_pos = Point3::new(0., 0., 3.);
+    let camera_front = vec3(0., 0., -1.);
+    let camera_up = vec3(0., 1., 0.);
+
     // render loop
     while !window.should_close() {
         // events
-        process_events(&mut window, &events);
+        process_events(&events);
+        process_inputs(&mut window, &mut camera_pos, &camera_front, &camera_up);
 
         //rendering
         unsafe {
@@ -175,13 +181,10 @@ fn main() {
             shader.use_program();
 
             //camera
-            let radius = 10.;
-            let cam_x = glfw.get_time().sin() as f32 * radius;
-            let cam_y = glfw.get_time().cos() as f32 * radius;
-            let camera_pos = Point3::new(cam_x, 0., cam_y);
-            let camera_target = Point3::new(0., 0., 0.);
-            let up = vec3(0., 1., 0.);
-            shader.set_matrix_4f("view", Matrix4::look_at(camera_pos, camera_target, up));
+            shader.set_matrix_4f(
+                "view",
+                Matrix4::look_at(camera_pos, camera_pos + camera_front, camera_up),
+            );
 
             let (width, height) = window.get_size();
             shader.set_matrix_4f(
@@ -223,16 +226,37 @@ fn main() {
     }
 }
 
-fn process_events(window: &mut Window, events: &Receiver<(f64, WindowEvent)>) {
+fn process_events(events: &Receiver<(f64, WindowEvent)>) {
     for (_, event) in glfw::flush_messages(events) {
-        match event {
-            WindowEvent::FramebufferSize(width, height) => {
-                // make sure the viewport matches the new window dimensions
-                unsafe { gl::Viewport(0, 0, width, height) }
-            }
-            WindowEvent::Key(Key::Escape, _, Action::Press, _) => window.set_should_close(true),
-            _ => {}
+        if let WindowEvent::FramebufferSize(width, height) = event {
+            // make sure the viewport matches the new window dimensions
+            unsafe { gl::Viewport(0, 0, width, height) }
         }
+    }
+}
+
+fn process_inputs(
+    window: &mut Window,
+    camera_pos: &mut Point3<f32>,
+    camera_front: &Vector3<f32>,
+    camera_up: &Vector3<f32>,
+) {
+    if window.get_key(Key::Escape) == Action::Press {
+        window.set_should_close(true)
+    }
+    let camera_speed = 0.05;
+
+    if window.get_key(Key::W) == Action::Press {
+        *camera_pos += camera_speed * camera_front
+    }
+    if window.get_key(Key::S) == Action::Press {
+        *camera_pos -= camera_speed * camera_front
+    }
+    if window.get_key(Key::A) == Action::Press {
+        *camera_pos -= camera_front.cross(*camera_up).normalize() * camera_speed;
+    }
+    if window.get_key(Key::D) == Action::Press {
+        *camera_pos += camera_front.cross(*camera_up).normalize() * camera_speed;
     }
 }
 
