@@ -1,5 +1,6 @@
 use cgmath::prelude::*;
 use cgmath::Matrix4;
+use cgmath::Vector3;
 use gl::types::GLchar;
 use gl::types::GLenum;
 use gl::types::GLfloat;
@@ -50,7 +51,7 @@ impl Shader {
         }
     }
 
-    pub fn set_matrix_4f(&self, name: &str, value: Matrix4<f32>) {
+    pub fn set_matrix4(&self, name: &str, value: Matrix4<f32>) {
         unsafe {
             gl::UniformMatrix4fv(
                 self.get_uniform_location(name),
@@ -58,6 +59,11 @@ impl Shader {
                 gl::FALSE,
                 value.as_ptr(),
             );
+        }
+    }
+    pub fn set_vec3(&self, name: &str, value: Vector3<f32>) {
+        unsafe {
+            gl::Uniform3fv(self.get_uniform_location(name), 1, value.as_ptr());
         }
     }
 
