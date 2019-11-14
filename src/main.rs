@@ -8,6 +8,7 @@ use cgmath::prelude::*;
 use cgmath::vec3;
 use cgmath::Deg;
 use cgmath::Matrix4;
+use cgmath::Point2;
 use gl::types::GLfloat;
 use gl::types::GLint;
 use gl::types::GLsizeiptr;
@@ -164,10 +165,7 @@ fn main() {
 
     let mut camera = Camera::new();
 
-    let mut first_mouse = true;
-    let mut last_x: f32 = 0.;
-    let mut last_y: f32 = 0.;
-
+    let mut last_mouse: Option<Point2<f32>> = None;
     let mut last_time = glfw.get_time() as f32;
 
     // render loop
@@ -177,13 +175,7 @@ fn main() {
         last_time = current_time;
 
         // events
-        process_events(
-            &events,
-            &mut first_mouse,
-            &mut last_x,
-            &mut last_y,
-            &mut camera,
-        );
+        process_events(&events, &mut last_mouse, &mut camera);
         process_inputs(&mut window, &mut camera, delta_time);
 
         //rendering
@@ -247,9 +239,7 @@ fn main() {
 
 fn process_events(
     events: &Receiver<(f64, WindowEvent)>,
-    first_mouse: &mut bool,
-    last_x: &mut f32,
-    last_y: &mut f32,
+    last_mouse: &mut Option<Point2<f32>>,
     camera: &mut Camera,
 ) {
     for (_, event) in glfw::flush_messages(events) {
@@ -259,18 +249,12 @@ fn process_events(
                 unsafe { gl::Viewport(0, 0, width, height) }
             }
             WindowEvent::CursorPos(xpos, ypos) => {
-                if *first_mouse {
-                    *last_x = xpos as f32;
-                    *last_y = ypos as f32;
-                    *first_mouse = false;
-                }
+                let current = Point2::new(xpos as f32, ypos as f32);
+                let last = last_mouse.replace(current).unwrap_or(current);
 
                 let sensitivity = 0.05;
-                let xoffset = (xpos as f32 - *last_x) * sensitivity;
-                let yoffset = (*last_y - ypos as f32) * sensitivity;
-
-                *last_x = xpos as f32;
-                *last_y = ypos as f32;
+                let xoffset = (current.x - last.x) * sensitivity;
+                let yoffset = (last.y - current.y) * sensitivity;
 
                 camera.rotate(xoffset, yoffset);
             }
