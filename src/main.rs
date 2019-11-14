@@ -1,13 +1,13 @@
+mod camera;
 mod shader;
 
+use crate::camera::Camera;
 use crate::shader::Shader;
 use cgmath::perspective;
 use cgmath::prelude::*;
 use cgmath::vec3;
 use cgmath::Deg;
 use cgmath::Matrix4;
-use cgmath::Point3;
-use cgmath::Vector3;
 use gl::types::GLfloat;
 use gl::types::GLint;
 use gl::types::GLsizeiptr;
@@ -162,17 +162,11 @@ fn main() {
         gl::Enable(gl::DEPTH_TEST);
     }
 
-    let mut camera_pos = Point3::new(0., 0., 3.);
-    let mut camera_front = vec3(0., 0., -1.);
-    let camera_up = vec3(0., 1., 0.);
+    let mut camera = Camera::new();
 
     let mut first_mouse = true;
     let mut last_x: f32 = 0.;
     let mut last_y: f32 = 0.;
-    let mut yaw: f32 = -89.;
-    let mut pitch: f32 = 0.;
-
-    let mut field_of_view: f32 = 45.;
 
     let mut last_time = glfw.get_time() as f32;
 
@@ -188,18 +182,9 @@ fn main() {
             &mut first_mouse,
             &mut last_x,
             &mut last_y,
-            &mut yaw,
-            &mut pitch,
-            &mut camera_front,
-            &mut field_of_view,
+            &mut camera,
         );
-        process_inputs(
-            &mut window,
-            &mut camera_pos,
-            &camera_front,
-            &camera_up,
-            delta_time,
-        );
+        process_inputs(&mut window, &mut camera, delta_time);
 
         //rendering
         unsafe {
@@ -213,15 +198,17 @@ fn main() {
             shader.use_program();
 
             //camera
-            shader.set_matrix_4f(
-                "view",
-                Matrix4::look_at(camera_pos, camera_pos + camera_front, camera_up),
-            );
+            shader.set_matrix_4f("view", camera.view());
 
             let (width, height) = window.get_size();
             shader.set_matrix_4f(
                 "projection",
-                perspective(Deg(field_of_view), width as f32 / height as f32, 0.1, 100.),
+                perspective(
+                    Deg(camera.field_of_view),
+                    width as f32 / height as f32,
+                    0.1,
+                    100.,
+                ),
             );
 
             // render the shape
@@ -263,10 +250,7 @@ fn process_events(
     first_mouse: &mut bool,
     last_x: &mut f32,
     last_y: &mut f32,
-    yaw: &mut f32,
-    pitch: &mut f32,
-    camera_front: &mut Vector3<f32>,
-    field_of_view: &mut f32,
+    camera: &mut Camera,
 ) {
     for (_, event) in glfw::flush_messages(events) {
         match event {
@@ -288,47 +272,33 @@ fn process_events(
                 *last_x = xpos as f32;
                 *last_y = ypos as f32;
 
-                *yaw += xoffset;
-                *pitch = (*pitch + yoffset).min(89.).max(-89.);
-
-                *camera_front = vec3(
-                    yaw.to_radians().cos() * pitch.to_radians().cos(),
-                    pitch.to_radians().sin(),
-                    yaw.to_radians().sin() * pitch.to_radians().cos(),
-                )
-                .normalize();
+                camera.rotate(xoffset, yoffset);
             }
             WindowEvent::Scroll(_, yoffset) => {
-                *field_of_view = (*field_of_view - yoffset as f32).min(45.).max(1.);
+                camera.zoom_in(yoffset as f32);
             }
             _ => {}
         }
     }
 }
 
-fn process_inputs(
-    window: &mut Window,
-    camera_pos: &mut Point3<f32>,
-    camera_front: &Vector3<f32>,
-    camera_up: &Vector3<f32>,
-    delta_time: f32,
-) {
+fn process_inputs(window: &mut Window, camera: &mut Camera, delta_time: f32) {
     if window.get_key(Key::Escape) == Action::Press {
         window.set_should_close(true)
     }
 
     let camera_speed = 2.5 * delta_time;
     if window.get_key(Key::W) == Action::Press {
-        *camera_pos += camera_speed * camera_front
+        camera.move_forward(camera_speed);
     }
     if window.get_key(Key::S) == Action::Press {
-        *camera_pos -= camera_speed * camera_front
+        camera.move_forward(-camera_speed);
     }
     if window.get_key(Key::A) == Action::Press {
-        *camera_pos -= camera_front.cross(*camera_up).normalize() * camera_speed;
+        camera.move_right(-camera_speed);
     }
     if window.get_key(Key::D) == Action::Press {
-        *camera_pos += camera_front.cross(*camera_up).normalize() * camera_speed;
+        camera.move_right(camera_speed);
     }
 }
 
