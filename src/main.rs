@@ -43,6 +43,7 @@ fn main() {
     window.set_key_polling(true);
     window.set_cursor_mode(glfw::CursorMode::Disabled);
     window.set_cursor_pos_polling(true);
+    window.set_scroll_polling(true);
 
     // gl: load all OpenGL function pointers
     gl::load_with(|symbol| window.get_proc_address(symbol) as *const _);
@@ -171,6 +172,8 @@ fn main() {
     let mut yaw: f32 = -89.;
     let mut pitch: f32 = 0.;
 
+    let mut field_of_view: f32 = 45.;
+
     let mut last_time = glfw.get_time() as f32;
 
     // render loop
@@ -188,6 +191,7 @@ fn main() {
             &mut yaw,
             &mut pitch,
             &mut camera_front,
+            &mut field_of_view,
         );
         process_inputs(
             &mut window,
@@ -217,7 +221,7 @@ fn main() {
             let (width, height) = window.get_size();
             shader.set_matrix_4f(
                 "projection",
-                perspective(Deg(45.), width as f32 / height as f32, 0.1, 100.),
+                perspective(Deg(field_of_view), width as f32 / height as f32, 0.1, 100.),
             );
 
             // render the shape
@@ -262,6 +266,7 @@ fn process_events(
     yaw: &mut f32,
     pitch: &mut f32,
     camera_front: &mut Vector3<f32>,
+    field_of_view: &mut f32,
 ) {
     for (_, event) in glfw::flush_messages(events) {
         match event {
@@ -292,6 +297,9 @@ fn process_events(
                     yaw.to_radians().sin() * pitch.to_radians().cos(),
                 )
                 .normalize();
+            }
+            WindowEvent::Scroll(_, yoffset) => {
+                *field_of_view = (*field_of_view - yoffset as f32).min(45.).max(1.);
             }
             _ => {}
         }
