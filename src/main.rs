@@ -41,6 +41,8 @@ fn main() {
     window.make_current();
     window.set_framebuffer_size_polling(true);
     window.set_key_polling(true);
+    window.set_cursor_mode(glfw::CursorMode::Disabled);
+    window.set_cursor_pos_polling(true);
 
     // gl: load all OpenGL function pointers
     gl::load_with(|symbol| window.get_proc_address(symbol) as *const _);
@@ -160,8 +162,14 @@ fn main() {
     }
 
     let mut camera_pos = Point3::new(0., 0., 3.);
-    let camera_front = vec3(0., 0., -1.);
+    let mut camera_front = vec3(0., 0., -1.);
     let camera_up = vec3(0., 1., 0.);
+
+    let mut first_mouse = true;
+    let mut last_x: f32 = 0.;
+    let mut last_y: f32 = 0.;
+    let mut yaw: f32 = -89.;
+    let mut pitch: f32 = 0.;
 
     let mut last_time = glfw.get_time() as f32;
 
@@ -172,7 +180,15 @@ fn main() {
         last_time = current_time;
 
         // events
-        process_events(&events);
+        process_events(
+            &events,
+            &mut first_mouse,
+            &mut last_x,
+            &mut last_y,
+            &mut yaw,
+            &mut pitch,
+            &mut camera_front,
+        );
         process_inputs(
             &mut window,
             &mut camera_pos,
@@ -238,11 +254,46 @@ fn main() {
     }
 }
 
-fn process_events(events: &Receiver<(f64, WindowEvent)>) {
+fn process_events(
+    events: &Receiver<(f64, WindowEvent)>,
+    first_mouse: &mut bool,
+    last_x: &mut f32,
+    last_y: &mut f32,
+    yaw: &mut f32,
+    pitch: &mut f32,
+    camera_front: &mut Vector3<f32>,
+) {
     for (_, event) in glfw::flush_messages(events) {
-        if let WindowEvent::FramebufferSize(width, height) = event {
-            // make sure the viewport matches the new window dimensions
-            unsafe { gl::Viewport(0, 0, width, height) }
+        match event {
+            WindowEvent::FramebufferSize(width, height) => {
+                // make sure the viewport matches the new window dimensions
+                unsafe { gl::Viewport(0, 0, width, height) }
+            }
+            WindowEvent::CursorPos(xpos, ypos) => {
+                if *first_mouse {
+                    *last_x = xpos as f32;
+                    *last_y = ypos as f32;
+                    *first_mouse = false;
+                }
+
+                let sensitivity = 0.05;
+                let xoffset = (xpos as f32 - *last_x) * sensitivity;
+                let yoffset = (*last_y - ypos as f32) * sensitivity;
+
+                *last_x = xpos as f32;
+                *last_y = ypos as f32;
+
+                *yaw += xoffset;
+                *pitch = (*pitch + yoffset).min(89.).max(-89.);
+
+                *camera_front = vec3(
+                    yaw.to_radians().cos() * pitch.to_radians().cos(),
+                    pitch.to_radians().sin(),
+                    yaw.to_radians().sin() * pitch.to_radians().cos(),
+                )
+                .normalize();
+            }
+            _ => {}
         }
     }
 }
