@@ -163,11 +163,23 @@ fn main() {
     let camera_front = vec3(0., 0., -1.);
     let camera_up = vec3(0., 1., 0.);
 
+    let mut last_time = glfw.get_time() as f32;
+
     // render loop
     while !window.should_close() {
+        let current_time = glfw.get_time() as f32;
+        let delta_time = current_time - last_time;
+        last_time = current_time;
+
         // events
         process_events(&events);
-        process_inputs(&mut window, &mut camera_pos, &camera_front, &camera_up);
+        process_inputs(
+            &mut window,
+            &mut camera_pos,
+            &camera_front,
+            &camera_up,
+            delta_time,
+        );
 
         //rendering
         unsafe {
@@ -240,12 +252,13 @@ fn process_inputs(
     camera_pos: &mut Point3<f32>,
     camera_front: &Vector3<f32>,
     camera_up: &Vector3<f32>,
+    delta_time: f32,
 ) {
     if window.get_key(Key::Escape) == Action::Press {
         window.set_should_close(true)
     }
-    let camera_speed = 0.05;
 
+    let camera_speed = 2.5 * delta_time;
     if window.get_key(Key::W) == Action::Press {
         *camera_pos += camera_speed * camera_front
     }
