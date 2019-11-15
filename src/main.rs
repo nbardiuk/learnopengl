@@ -50,49 +50,44 @@ fn main() {
     let lamp_shader = Shader::new("res/shaders/lamp.vert", "res/shaders/lamp.frag")
         .expect("Shader Program linkage failed");
 
-    let vertices: [GLfloat; 108] = [
-        //
-        -0.5, -0.5, -0.5, //
-        0.5, -0.5, -0.5, //
-        0.5, 0.5, -0.5, //
-        0.5, 0.5, -0.5, //
-        -0.5, 0.5, -0.5, //
-        -0.5, -0.5, -0.5, //
-        //
-        -0.5, -0.5, 0.5, //
-        0.5, -0.5, 0.5, //
-        0.5, 0.5, 0.5, //
-        0.5, 0.5, 0.5, //
-        -0.5, 0.5, 0.5, //
-        -0.5, -0.5, 0.5, //
-        //
-        -0.5, 0.5, 0.5, //
-        -0.5, 0.5, -0.5, //
-        -0.5, -0.5, -0.5, //
-        -0.5, -0.5, -0.5, //
-        -0.5, -0.5, 0.5, //
-        -0.5, 0.5, 0.5, //
-        //
-        0.5, 0.5, 0.5, //
-        0.5, 0.5, -0.5, //
-        0.5, -0.5, -0.5, //
-        0.5, -0.5, -0.5, //
-        0.5, -0.5, 0.5, //
-        0.5, 0.5, 0.5, //
-        //
-        -0.5, -0.5, -0.5, //
-        0.5, -0.5, -0.5, //
-        0.5, -0.5, 0.5, //
-        0.5, -0.5, 0.5, //
-        -0.5, -0.5, 0.5, //
-        -0.5, -0.5, -0.5, //
-        //
-        -0.5, 0.5, -0.5, //
-        0.5, 0.5, -0.5, //
-        0.5, 0.5, 0.5, //
-        0.5, 0.5, 0.5, //
-        -0.5, 0.5, 0.5, //
-        -0.5, 0.5, -0.5, //
+    let vertices: [GLfloat; 216] = [
+        // position       // normal
+        -0.5, -0.5, -0.5, 0.0, 0.0, -1.0, //
+        0.5, -0.5, -0.5, 0.0, 0.0, -1.0, //
+        0.5, 0.5, -0.5, 0.0, 0.0, -1.0, //
+        0.5, 0.5, -0.5, 0.0, 0.0, -1.0, //
+        -0.5, 0.5, -0.5, 0.0, 0.0, -1.0, //
+        -0.5, -0.5, -0.5, 0.0, 0.0, -1.0, //
+        -0.5, -0.5, 0.5, 0.0, 0.0, 1.0, //
+        0.5, -0.5, 0.5, 0.0, 0.0, 1.0, //
+        0.5, 0.5, 0.5, 0.0, 0.0, 1.0, //
+        0.5, 0.5, 0.5, 0.0, 0.0, 1.0, //
+        -0.5, 0.5, 0.5, 0.0, 0.0, 1.0, //
+        -0.5, -0.5, 0.5, 0.0, 0.0, 1.0, //
+        -0.5, 0.5, 0.5, -1.0, 0.0, 0.0, //
+        -0.5, 0.5, -0.5, -1.0, 0.0, 0.0, //
+        -0.5, -0.5, -0.5, -1.0, 0.0, 0.0, //
+        -0.5, -0.5, -0.5, -1.0, 0.0, 0.0, //
+        -0.5, -0.5, 0.5, -1.0, 0.0, 0.0, //
+        -0.5, 0.5, 0.5, -1.0, 0.0, 0.0, //
+        0.5, 0.5, 0.5, 1.0, 0.0, 0.0, //
+        0.5, 0.5, -0.5, 1.0, 0.0, 0.0, //
+        0.5, -0.5, -0.5, 1.0, 0.0, 0.0, //
+        0.5, -0.5, -0.5, 1.0, 0.0, 0.0, //
+        0.5, -0.5, 0.5, 1.0, 0.0, 0.0, //
+        0.5, 0.5, 0.5, 1.0, 0.0, 0.0, //
+        -0.5, -0.5, -0.5, 0.0, -1.0, 0.0, //
+        0.5, -0.5, -0.5, 0.0, -1.0, 0.0, //
+        0.5, -0.5, 0.5, 0.0, -1.0, 0.0, //
+        0.5, -0.5, 0.5, 0.0, -1.0, 0.0, //
+        -0.5, -0.5, 0.5, 0.0, -1.0, 0.0, //
+        -0.5, -0.5, -0.5, 0.0, -1.0, 0.0, //
+        -0.5, 0.5, -0.5, 0.0, 1.0, 0.0, //
+        0.5, 0.5, -0.5, 0.0, 1.0, 0.0, //
+        0.5, 0.5, 0.5, 0.0, 1.0, 0.0, //
+        0.5, 0.5, 0.5, 0.0, 1.0, 0.0, //
+        -0.5, 0.5, 0.5, 0.0, 1.0, 0.0, //
+        -0.5, 0.5, -0.5, 0.0, 1.0, 0.0, //
     ];
 
     let mut cube_vao = 0;
@@ -106,7 +101,7 @@ fn main() {
         let vert_size = mem::size_of_val(&vertices) as GLsizeiptr;
         gl::BufferData(gl::ARRAY_BUFFER, vert_size, vert_ref, gl::STATIC_DRAW);
 
-        let stride = 3 * mem::size_of::<GLfloat>() as GLint;
+        let stride = 6 * mem::size_of::<GLfloat>() as GLint;
 
         // 2. bind Vertex Array Object for lamp
         gl::GenVertexArrays(1, &mut lamp_vao);
@@ -117,8 +112,19 @@ fn main() {
         // 2. bind Vertex Array Object for cube
         gl::GenVertexArrays(1, &mut cube_vao);
         gl::BindVertexArray(cube_vao);
+        // aPos
         gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE, stride, ptr::null());
         gl::EnableVertexAttribArray(0);
+        // aNormal
+        gl::VertexAttribPointer(
+            1,
+            3,
+            gl::FLOAT,
+            gl::FALSE,
+            stride,
+            (3 * mem::size_of::<GLfloat>()) as *const c_void,
+        );
+        gl::EnableVertexAttribArray(1);
     }
 
     unsafe {
@@ -156,16 +162,18 @@ fn main() {
             gl::ClearColor(0.2, 0.2, 0.3, 1.);
             gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
 
+            let light_pos = vec3(1.2, 1.0, 2.0);
+
             light_shader.use_program();
             light_shader.set_vec3("objectColor", vec3(1., 0.5, 0.31));
             light_shader.set_vec3("lightColor", vec3(1., 1., 1.));
+            light_shader.set_vec3("lightPos", light_pos);
             light_shader.set_matrix4("projection", projection);
             light_shader.set_matrix4("view", camera.view());
             light_shader.set_matrix4("model", Matrix4::identity());
             gl::BindVertexArray(cube_vao);
             gl::DrawArrays(gl::TRIANGLES, 0, 36);
 
-            let light_pos = vec3(1.2, 1.0, 2.0);
             let model = Matrix4::from_translation(light_pos) * Matrix4::from_scale(0.2);
             lamp_shader.use_program();
             lamp_shader.set_matrix4("projection", projection);
