@@ -5,7 +5,7 @@ use cgmath::Point3;
 use cgmath::Vector3;
 
 pub struct Camera {
-    position: Point3<f32>,
+    pub position: Point3<f32>,
     front: Vector3<f32>,
     up: Vector3<f32>,
     pub field_of_view: f32,

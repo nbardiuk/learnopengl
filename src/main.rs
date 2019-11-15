@@ -168,6 +168,10 @@ fn main() {
             light_shader.set_vec3("objectColor", vec3(1., 0.5, 0.31));
             light_shader.set_vec3("lightColor", vec3(1., 1., 1.));
             light_shader.set_vec3("lightPos", light_pos);
+            light_shader.set_vec3(
+                "viewPos",
+                vec3(camera.position.x, camera.position.y, camera.position.z),
+            );
             light_shader.set_matrix4("projection", projection);
             light_shader.set_matrix4("view", camera.view());
             light_shader.set_matrix4("model", Matrix4::identity());
