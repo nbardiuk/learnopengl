@@ -187,11 +187,16 @@ fn main() {
             gl::ClearColor(0.2, 0.2, 0.3, 1.);
             gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
 
+            let light_pos = vec3(1.2, 1.0, 2.0);
+
             light_shader.use_program();
-            light_shader.set_vec3("light.direction", vec3(-0.2, -1.0, -0.3));
+            light_shader.set_vec3("light.position", light_pos);
             light_shader.set_vec3("light.ambient", vec3(0.2, 0.2, 0.2));
             light_shader.set_vec3("light.diffuse", vec3(0.5, 0.5, 0.5));
             light_shader.set_vec3("light.specular", vec3(1.0, 1.0, 1.0));
+            light_shader.set_float("light.constant", 1.0);
+            light_shader.set_float("light.linear", 0.09);
+            light_shader.set_float("light.quadratic", 0.032);
 
             light_shader.set_texture("material.diffuse", diffuse_map, gl::TEXTURE0);
             light_shader.set_texture("material.specular", specular_map, gl::TEXTURE1);
@@ -210,7 +215,6 @@ fn main() {
                 gl::DrawArrays(gl::TRIANGLES, 0, 36);
             }
 
-            let light_pos = vec3(1.2, 1.0, 2.0);
             let model = Matrix4::from_translation(light_pos) * Matrix4::from_scale(0.2);
             lamp_shader.use_program();
             lamp_shader.set_matrix4("projection", projection);
