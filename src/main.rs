@@ -187,10 +187,13 @@ fn main() {
             gl::ClearColor(0.2, 0.2, 0.3, 1.);
             gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
 
+            let as_vec3 = |p: Point3<f32>| vec3(p.x, p.y, p.z);
             let light_pos = vec3(1.2, 1.0, 2.0);
 
             light_shader.use_program();
-            light_shader.set_vec3("light.position", light_pos);
+            light_shader.set_vec3("light.position", as_vec3(camera.position));
+            light_shader.set_vec3("light.direction", camera.front);
+            light_shader.set_float("light.cutOff", 12.5_f32.to_radians().cos());
             light_shader.set_vec3("light.ambient", vec3(0.2, 0.2, 0.2));
             light_shader.set_vec3("light.diffuse", vec3(0.5, 0.5, 0.5));
             light_shader.set_vec3("light.specular", vec3(1.0, 1.0, 1.0));
@@ -202,7 +205,6 @@ fn main() {
             light_shader.set_texture("material.specular", specular_map, gl::TEXTURE1);
             light_shader.set_float("material.shininess", 32.);
 
-            let as_vec3 = |p: Point3<f32>| vec3(p.x, p.y, p.z);
             light_shader.set_vec3("viewPos", as_vec3(camera.position));
             light_shader.set_matrix4("projection", projection);
             light_shader.set_matrix4("view", camera.view());
