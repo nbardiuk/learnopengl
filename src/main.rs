@@ -9,6 +9,8 @@ use cgmath::vec3;
 use cgmath::Deg;
 use cgmath::Matrix4;
 use cgmath::Point2;
+use cgmath::Point3;
+use cgmath::Vector3;
 use gl::types::GLfloat;
 use gl::types::GLint;
 use gl::types::GLsizeiptr;
@@ -99,6 +101,19 @@ fn main() {
         -0.5, 0.5, -0.5, 0.0, 1.0, 0.0, 0.0, 1.0, //
     ];
 
+    let cube_positions: [Vector3<f32>; 10] = [
+        vec3(0.0, 0.0, 0.0),
+        vec3(2.0, 5.0, -15.0),
+        vec3(-1.5, -2.2, -2.5),
+        vec3(-3.8, -2.0, -12.3),
+        vec3(2.4, -0.4, -3.5),
+        vec3(-1.7, 3.0, -7.5),
+        vec3(1.3, -2.0, -2.5),
+        vec3(1.5, 2.0, -2.5),
+        vec3(1.5, 0.2, -1.5),
+        vec3(-1.3, 1.0, -1.5),
+    ];
+
     let diffuse_map = load_texture("res/textures/container2.png").unwrap();
     let specular_map = load_texture("res/textures/container2_specular.png").unwrap();
 
@@ -172,10 +187,8 @@ fn main() {
             gl::ClearColor(0.2, 0.2, 0.3, 1.);
             gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
 
-            let light_pos = vec3(1.2, 1.0, 2.0);
-
             light_shader.use_program();
-            light_shader.set_vec3("light.position", light_pos);
+            light_shader.set_vec3("light.direction", vec3(-0.2, -1.0, -0.3));
             light_shader.set_vec3("light.ambient", vec3(0.2, 0.2, 0.2));
             light_shader.set_vec3("light.diffuse", vec3(0.5, 0.5, 0.5));
             light_shader.set_vec3("light.specular", vec3(1.0, 1.0, 1.0));
@@ -184,16 +197,20 @@ fn main() {
             light_shader.set_texture("material.specular", specular_map, gl::TEXTURE1);
             light_shader.set_float("material.shininess", 32.);
 
-            light_shader.set_vec3(
-                "viewPos",
-                vec3(camera.position.x, camera.position.y, camera.position.z),
-            );
+            let as_vec3 = |p: Point3<f32>| vec3(p.x, p.y, p.z);
+            light_shader.set_vec3("viewPos", as_vec3(camera.position));
             light_shader.set_matrix4("projection", projection);
             light_shader.set_matrix4("view", camera.view());
-            light_shader.set_matrix4("model", Matrix4::identity());
             gl::BindVertexArray(cube_vao);
-            gl::DrawArrays(gl::TRIANGLES, 0, 36);
+            for (i, &position) in cube_positions.iter().enumerate() {
+                let axis = vec3(1., 0.3, 0.5).normalize();
+                let rotation = Matrix4::from_axis_angle(axis, Deg(20. * i as f32));
+                let translation = Matrix4::from_translation(position);
+                light_shader.set_matrix4("model", translation * rotation);
+                gl::DrawArrays(gl::TRIANGLES, 0, 36);
+            }
 
+            let light_pos = vec3(1.2, 1.0, 2.0);
             let model = Matrix4::from_translation(light_pos) * Matrix4::from_scale(0.2);
             lamp_shader.use_program();
             lamp_shader.set_matrix4("projection", projection);
