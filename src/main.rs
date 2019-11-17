@@ -163,11 +163,18 @@ fn main() {
             gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
 
             let light_pos = vec3(1.2, 1.0, 2.0);
+            let light_color = vec3(
+                (glfw.get_time() * 2.).sin() as f32,
+                (glfw.get_time() * 0.7).sin() as f32,
+                (glfw.get_time() * 1.3).sin() as f32,
+            );
+            let diffuse = light_color * 0.5;
+            let ambient = diffuse * 0.2;
 
             light_shader.use_program();
             light_shader.set_vec3("light.position", light_pos);
-            light_shader.set_vec3("light.ambient", vec3(0.2, 0.2, 0.2));
-            light_shader.set_vec3("light.diffuse", vec3(0.5, 0.5, 0.5));
+            light_shader.set_vec3("light.ambient", ambient);
+            light_shader.set_vec3("light.diffuse", diffuse);
             light_shader.set_vec3("light.specular", vec3(1., 1., 1.));
             light_shader.set_vec3("material.ambient", vec3(1., 0.5, 0.31));
             light_shader.set_vec3("material.diffuse", vec3(1., 0.5, 0.31));
