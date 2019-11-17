@@ -61,10 +61,19 @@ impl Shader {
             );
         }
     }
+
     pub fn set_vec3(&self, name: &str, value: Vector3<f32>) {
         unsafe {
             gl::Uniform3fv(self.get_uniform_location(name), 1, value.as_ptr());
         }
+    }
+
+    pub fn set_texture(&self, name: &str, value: GLuint, id: GLenum) {
+        unsafe {
+            gl::ActiveTexture(id);
+            gl::BindTexture(gl::TEXTURE_2D, value);
+        }
+        self.set_int(name, (id - gl::TEXTURE0) as i32);
     }
 
     fn get_uniform_location(&self, name: &str) -> GLint {

@@ -100,6 +100,7 @@ fn main() {
     ];
 
     let diffuse_map = load_texture("res/textures/container2.png").unwrap();
+    let specular_map = load_texture("res/textures/container2_specular.png").unwrap();
 
     let mut cube_vao = 0;
     let mut lamp_vao = 0;
@@ -179,11 +180,8 @@ fn main() {
             light_shader.set_vec3("light.diffuse", vec3(0.5, 0.5, 0.5));
             light_shader.set_vec3("light.specular", vec3(1.0, 1.0, 1.0));
 
-            light_shader.set_vec3("material.ambient", vec3(1., 0.5, 0.31));
-            gl::ActiveTexture(gl::TEXTURE0);
-            gl::BindTexture(gl::TEXTURE_2D, diffuse_map);
-            light_shader.set_int("material.diffuse", 0);
-            light_shader.set_vec3("material.specular", vec3(0.5, 0.5, 0.5));
+            light_shader.set_texture("material.diffuse", diffuse_map, gl::TEXTURE0);
+            light_shader.set_texture("material.specular", specular_map, gl::TEXTURE1);
             light_shader.set_float("material.shininess", 32.);
 
             light_shader.set_vec3(
@@ -216,6 +214,7 @@ fn main() {
         gl::DeleteVertexArrays(1, &lamp_vao);
         gl::DeleteBuffers(1, &vbo);
         gl::DeleteTextures(1, &diffuse_map);
+        gl::DeleteTextures(1, &specular_map);
     }
 }
 
