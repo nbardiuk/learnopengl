@@ -165,9 +165,12 @@ fn main() {
             let light_pos = vec3(1.2, 1.0, 2.0);
 
             light_shader.use_program();
-            light_shader.set_vec3("objectColor", vec3(1., 0.5, 0.31));
             light_shader.set_vec3("lightColor", vec3(1., 1., 1.));
             light_shader.set_vec3("lightPos", light_pos);
+            light_shader.set_vec3("material.ambient", vec3(1., 0.5, 0.31));
+            light_shader.set_vec3("material.diffuse", vec3(1., 0.5, 0.31));
+            light_shader.set_vec3("material.specular", vec3(0.5, 0.5, 0.5));
+            light_shader.set_float("material.shininess", 32.);
             light_shader.set_vec3(
                 "viewPos",
                 vec3(camera.position.x, camera.position.y, camera.position.z),
