@@ -114,6 +114,13 @@ fn main() {
         vec3(-1.3, 1.0, -1.5),
     ];
 
+    let point_light_positions: [Vector3<f32>; 4] = [
+        vec3(0.7, 0.2, 2.0),
+        vec3(2.3, -3.3, -4.0),
+        vec3(-4.0, 2.0, -12.0),
+        vec3(0.0, 0.0, -3.0),
+    ];
+
     let diffuse_map = load_texture("res/textures/container2.png").unwrap();
     let specular_map = load_texture("res/textures/container2_specular.png").unwrap();
 
@@ -188,19 +195,34 @@ fn main() {
             gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
 
             let as_vec3 = |p: Point3<f32>| vec3(p.x, p.y, p.z);
-            let light_pos = vec3(1.2, 1.0, 2.0);
 
             light_shader.use_program();
-            light_shader.set_vec3("light.position", as_vec3(camera.position));
-            light_shader.set_vec3("light.direction", camera.front);
-            light_shader.set_float("light.cutOff", 12.5_f32.to_radians().cos());
-            light_shader.set_float("light.outerCutOff", 17.5_f32.to_radians().cos());
-            light_shader.set_vec3("light.ambient", vec3(0.2, 0.2, 0.2));
-            light_shader.set_vec3("light.diffuse", vec3(0.5, 0.5, 0.5));
-            light_shader.set_vec3("light.specular", vec3(1.0, 1.0, 1.0));
-            light_shader.set_float("light.constant", 1.0);
-            light_shader.set_float("light.linear", 0.09);
-            light_shader.set_float("light.quadratic", 0.032);
+            light_shader.set_vec3("dirLight.direction", vec3(-0.2, -1.0, -0.3));
+            light_shader.set_vec3("dirLight.ambient", vec3(0.05, 0.05, 0.05));
+            light_shader.set_vec3("dirLight.diffuse", vec3(0.4, 0.4, 0.4));
+            light_shader.set_vec3("dirLight.specular", vec3(0.5, 0.5, 0.5));
+
+            light_shader.set_vec3("spotLight.position", as_vec3(camera.position));
+            light_shader.set_vec3("spotLight.direction", camera.front);
+            light_shader.set_float("spotLight.cutOff", 12.5_f32.to_radians().cos());
+            light_shader.set_float("spotLight.outerCutOff", 15_f32.to_radians().cos());
+            light_shader.set_vec3("spotLight.ambient", vec3(0., 0., 0.));
+            light_shader.set_vec3("spotLight.diffuse", vec3(1.0, 1.0, 1.0));
+            light_shader.set_vec3("spotLight.specular", vec3(1.0, 1.0, 1.0));
+            light_shader.set_float("spotLight.constant", 1.0);
+            light_shader.set_float("spotLight.linear", 0.09);
+            light_shader.set_float("spotLight.quadratic", 0.032);
+
+            for (i, &position) in point_light_positions.iter().enumerate() {
+                let light = format!("pointLights[{}]", i);
+                light_shader.set_vec3(&format!("{}.{}", light, "position"), position);
+                light_shader.set_vec3(&format!("{}.{}", light, "ambient"), vec3(0.05, 0.05, 0.05));
+                light_shader.set_vec3(&format!("{}.{}", light, "diffuse"), vec3(0.8, 0.8, 0.8));
+                light_shader.set_vec3(&format!("{}.{}", light, "specular"), vec3(1.0, 1.0, 1.0));
+                light_shader.set_float(&format!("{}.{}", light, "constant"), 1.0);
+                light_shader.set_float(&format!("{}.{}", light, "linear"), 0.09);
+                light_shader.set_float(&format!("{}.{}", light, "quadratic"), 0.032);
+            }
 
             light_shader.set_texture("material.diffuse", diffuse_map, gl::TEXTURE0);
             light_shader.set_texture("material.specular", specular_map, gl::TEXTURE1);
@@ -218,13 +240,15 @@ fn main() {
                 gl::DrawArrays(gl::TRIANGLES, 0, 36);
             }
 
-            let model = Matrix4::from_translation(light_pos) * Matrix4::from_scale(0.2);
             lamp_shader.use_program();
             lamp_shader.set_matrix4("projection", projection);
             lamp_shader.set_matrix4("view", camera.view());
-            lamp_shader.set_matrix4("model", model);
             gl::BindVertexArray(lamp_vao);
-            gl::DrawArrays(gl::TRIANGLES, 0, 36);
+            for &position in point_light_positions.iter() {
+                let model = Matrix4::from_translation(position) * Matrix4::from_scale(0.2);
+                lamp_shader.set_matrix4("model", model);
+                gl::DrawArrays(gl::TRIANGLES, 0, 36);
+            }
         }
 
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
