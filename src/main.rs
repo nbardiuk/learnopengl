@@ -194,6 +194,7 @@ fn main() {
             light_shader.set_vec3("light.position", as_vec3(camera.position));
             light_shader.set_vec3("light.direction", camera.front);
             light_shader.set_float("light.cutOff", 12.5_f32.to_radians().cos());
+            light_shader.set_float("light.outerCutOff", 17.5_f32.to_radians().cos());
             light_shader.set_vec3("light.ambient", vec3(0.2, 0.2, 0.2));
             light_shader.set_vec3("light.diffuse", vec3(0.5, 0.5, 0.5));
             light_shader.set_vec3("light.specular", vec3(1.0, 1.0, 1.0));
